@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reasonix Cross Check"
+  short_description: "Run safe Reasonix CLI cross-check reviews."
+  default_prompt: "Use Reasonix to run a read-only cross-check review with the project diff, then report findings or block on failure."
