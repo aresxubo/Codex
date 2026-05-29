@@ -13,6 +13,7 @@ description: Run Reasonix CLI cross-validation reviews from Codex. Use when the 
 - Never change VPN, Windows proxy, registry proxy, npm proxy, git config, or persistent environment variables.
 - Prefer PowerShell native invocation over `cmd /c` for complex prompts. Windows `cmd` quoting can corrupt JSON examples.
 - Prefer `reasonix run --transcript <path>` and parse the transcript's `assistant_final` entry. Stdout appends cost statistics and is not strict JSON.
+- For prompts that contain UE category strings such as `Bamboo|Slice Demo|Cut Cap`, embedded quotes, pipes, or long code snippets, do not call the `reasonix.ps1` npm shim directly. It can truncate the `<task>` argument at pipe-like content. Use the Node `spawnSync` wrapper below so the task is passed as a real argv array.
 - If Reasonix is mandatory for the task and fails, do not mark the task complete. Report the failed command, key output, current progress, and ask whether to fix Reasonix, skip once, or use another verifier.
 
 ## Health Check
@@ -155,6 +156,40 @@ $answer
 ```
 
 6. Summarize blocking and nonblocking findings. Keep transcript paths for troubleshooting, but do not dump secrets or full logs.
+
+## Robust Windows Invocation
+
+Use this pattern whenever the prompt contains `|`, embedded `"..."`, UE category strings, or large code snippets. It bypasses the npm PowerShell shim and launches the Reasonix CLI through Node with an argv array.
+
+```powershell
+$prompt = @"
+You are doing a read-only Reasonix review.
+Review this exact code:
+UPROPERTY(EditAnywhere, Category = "Bamboo|Slice Demo|Cut Cap")
+"@
+
+$b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($prompt))
+$transcript = 'temp\reasonix-review.jsonl'
+Remove-Item $transcript -ErrorAction SilentlyContinue
+
+$nodeCode = @'
+const cp = require('child_process');
+const task = Buffer.from(process.argv[1], 'base64').toString('utf8');
+const cli = 'C:/Users/xubo2/AppData/Roaming/npm/node_modules/reasonix/dist/cli/index.js';
+const transcript = 'temp/reasonix-review.jsonl';
+const args = [cli, 'run', '--no-proxy', '--budget', '0.08', '--transcript', transcript, task];
+const r = cp.spawnSync(process.execPath, args, {
+  stdio: 'inherit',
+  cwd: process.cwd(),
+  env: process.env
+});
+process.exit(r.status ?? 1);
+'@
+
+node -e $nodeCode $b64
+```
+
+After the run, confirm the transcript's `user` record contains the full prompt. If it is truncated, treat Reasonix verification as failed.
 
 ## Practical Notes
 
