@@ -4,7 +4,7 @@ Personal Codex skills exported from `C:\Users\xubo2\.codex\skills`.
 
 ## Skills
 
-- `kscc-cross-check`: Run KSCC/Claude read-only cross-validation reviews with safe child-process environment cleanup and blocking failure policy.
+- `kscc-cross-check`: Run kscc read-only cross-validation reviews with safe child-process environment cleanup and blocking failure policy.
 
 ## Install
 

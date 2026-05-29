@@ -1,13 +1,13 @@
 ---
 name: kscc-cross-check
-description: Run KSCC/Claude cross-validation reviews from Codex. Use when the user asks for kscc, Claude review, Claude cross-check, cross-validation, or mandatory post-change kscc verification. Covers safe child-process environment cleanup, sandbox escalation, diff review prompts, output parsing, and failure policy without changing VPN or system proxy settings.
+description: Run kscc cross-validation reviews from Codex. Use when the user asks for kscc review, kscc cross-check, cross-validation, or mandatory post-change kscc verification. Covers safe child-process environment cleanup, sandbox escalation, diff review prompts, output parsing, and failure policy without changing VPN or system proxy settings.
 ---
 
 # KSCC Cross Check
 
 ## Core Rules
 
-- Use `kscc` as a read-only Claude reviewer after local checks when the user requests cross-validation or has made kscc verification mandatory.
+- Use `kscc` as the read-only reviewer after local checks when the user requests cross-validation or has made kscc verification mandatory.
 - Never change VPN, Windows proxy, registry proxy, npm proxy, git config, or persistent environment variables.
 - Only clear proxy and sandbox-related variables inside the single PowerShell child process that runs `kscc`.
 - Prefer English prompts for `cmd /c kscc` calls. Chinese stdin through `cmd.exe` can be mojibake.
@@ -60,7 +60,7 @@ $diff = git diff -- Source/GPUInteractation/Bamboo Source/GPUInteractation/GPUIn
 
 ```powershell
 $prompt = @"
-You are doing a read-only Claude cross-check for an Unreal Engine C++ change.
+You are doing a read-only kscc cross-check for an Unreal Engine C++ change.
 Focus areas: UE dynamic component lifecycle, Build.cs dependencies,
 generated material parameter consistency, repeated cutting and cap-plane state,
 and accidental unrelated resource edits.

@@ -1,4 +1,4 @@
 interface:
   display_name: "KSCC Cross Check"
-  short_description: "Run safe KSCC Claude cross-check reviews."
-  default_prompt: "Use kscc to run a read-only Claude cross-check review with the project diff, then report findings or block on failure."
+  short_description: "Run safe kscc cross-check reviews."
+  default_prompt: "Use kscc to run a read-only cross-check review with the project diff, then report findings or block on failure."
