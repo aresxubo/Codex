@@ -7,7 +7,9 @@ description: Run kscc cross-validation reviews from Codex. Use when the user ask
 
 ## Core Rules
 
-- Use `kscc` as the read-only reviewer after local checks when the user requests cross-validation or has made kscc verification mandatory.
+- Use `kscc` as a read-only reviewer before and after code changes when the user requests cross-validation or has made kscc verification mandatory.
+- Before modifying code, run a pre-change design review with the intended goal, constraints, relevant files, and proposed approach. Incorporate blocking feedback before editing.
+- After modifying code, run local checks first, then a post-change verification review over the actual diff.
 - Never change VPN, Windows proxy, registry proxy, npm proxy, git config, or persistent environment variables.
 - Only clear proxy and sandbox-related variables inside the single PowerShell child process that runs `kscc`.
 - Prefer English prompts for `cmd /c kscc` calls. Chinese stdin through `cmd.exe` can be mojibake.
@@ -47,7 +49,44 @@ error: EPERM reading "C:\Users\...\@seasun\kscc\cli.js"
 
 rerun the same command with `sandbox_permissions="require_escalated"`. This is a sandbox access issue, not a model, auth, or prompt failure.
 
-## Review Workflow
+## Pre-Change Design Review
+
+Run this before editing code when kscc verification is mandatory.
+
+1. Inspect the relevant local files and summarize the intended implementation.
+2. Build an English read-only prompt with no diff requirement if no code has changed yet.
+
+```powershell
+$prompt = @"
+You are doing a read-only kscc pre-change design review for an Unreal Engine C++ task.
+Do not call tools. Review only the context included below.
+
+Goal:
+<user goal>
+
+Current code summary:
+<relevant classes, functions, and constraints>
+
+Proposed implementation:
+<planned edits>
+
+Focus areas:
+- UE dynamic component lifecycle
+- Build.cs dependencies
+- generated material parameter consistency
+- repeated cutting and cap-plane state
+- accidental unrelated resource edits
+
+Return concise JSON only with fields:
+ok:boolean, blocking_feedback:array, recommended_changes:array, residual_risk:string.
+"@
+```
+
+3. Run `kscc` using the known good pattern.
+4. If `blocking_feedback` is not empty, update the approach before editing.
+5. If `kscc` fails and the pre-change review is mandatory, pause and ask the user how to proceed.
+
+## Post-Change Verification Workflow
 
 1. Run the normal local checks first, such as build, unit tests, or lint.
 2. Collect the intended diff only. For the GPUInteractation Bamboo workflow, use:

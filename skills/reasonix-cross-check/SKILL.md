@@ -7,7 +7,9 @@ description: Run Reasonix CLI cross-validation reviews from Codex. Use when the 
 
 ## Core Rules
 
-- Use `reasonix` as a read-only secondary reviewer after local checks when the user requests Reasonix cross-validation.
+- Use `reasonix` as a read-only secondary reviewer before and after code changes when the user requests Reasonix cross-validation.
+- Before modifying code, run a pre-change design review with the intended goal, constraints, relevant files, and proposed approach. Incorporate blocking feedback before editing.
+- After modifying code, run local checks first, then a post-change verification review over the actual diff.
 - Never change VPN, Windows proxy, registry proxy, npm proxy, git config, or persistent environment variables.
 - Prefer PowerShell native invocation over `cmd /c` for complex prompts. Windows `cmd` quoting can corrupt JSON examples.
 - Prefer `reasonix run --transcript <path>` and parse the transcript's `assistant_final` entry. Stdout appends cost statistics and is not strict JSON.
@@ -56,7 +58,53 @@ Get-Content $transcript | ForEach-Object {
 }
 ```
 
-## Review Workflow
+## Pre-Change Design Review
+
+Run this before editing code when Reasonix verification is mandatory or requested as part of planning.
+
+1. Inspect the relevant local files and summarize the intended implementation.
+2. Build an English read-only prompt. Use PowerShell native invocation and `--transcript`.
+
+```powershell
+$prompt = @"
+You are doing a read-only Reasonix pre-change design review for an Unreal Engine 5.7 C++ task.
+Do not edit files. Do not ask to run commands. Review only the context included below.
+
+Goal:
+<user goal>
+
+Current code summary:
+<relevant classes, functions, and constraints>
+
+Proposed implementation:
+<planned edits>
+
+Focus areas:
+- UE dynamic component lifecycle
+- Build.cs dependencies
+- generated material parameter consistency
+- repeated cutting and cap-plane state
+- accidental unrelated resource edits
+
+Return concise JSON only with fields:
+ok:boolean, blocking_feedback:array, recommended_changes:array, residual_risk:string.
+"@
+```
+
+3. Run Reasonix with a transcript:
+
+```powershell
+New-Item -ItemType Directory -Force -Path temp | Out-Null
+$transcript = 'temp\reasonix-prechange-review.jsonl'
+Remove-Item $transcript -ErrorAction SilentlyContinue
+reasonix run --no-proxy --budget 0.08 --transcript $transcript $prompt
+```
+
+4. Parse `assistant_final` from the transcript.
+5. If `blocking_feedback` is not empty, update the approach before editing.
+6. If Reasonix fails and the pre-change review is mandatory, pause and ask the user how to proceed.
+
+## Post-Change Verification Workflow
 
 1. Run normal local checks first, such as UE build, unit tests, or lint.
 2. Collect the intended diff only. For the GPUInteractation Bamboo workflow:
